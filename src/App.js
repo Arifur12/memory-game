@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import SingleCard from "./components/SingleCard.js";
 
 const cardImages = [
-  { src: "/img/helmet-1.png" },
-  { src: "/img/potion-1.png" },
-  { src: "/img/ring-1.png" },
-  { src: "/img/scroll-1.png" },
-  { src: "/img/shield-1.png" },
-  { src: "/img/sword-1.png" },
+  { src: "/img/helmet-1.png", matched: false },
+  { src: "/img/potion-1.png", matched: false },
+  { src: "/img/ring-1.png", matched: false },
+  { src: "/img/scroll-1.png", matched: false },
+  { src: "/img/shield-1.png", matched: false },
+  { src: "/img/sword-1.png", matched: false },
 ];
 
 function App() {
@@ -16,12 +16,15 @@ function App() {
   const [turns, setTurns] = useState(0);
   const [choiceOne, setChoiceOne] = useState(null);
   const [choiceTwo, setChoiceTwo] = useState(null);
+  const [disabled, setDisabled] = useState(false);
   // shufflecards
   const shuffleCards = () => {
     const shuffledCards = [...cardImages, ...cardImages]
       .sort((card) => Math.random(card) - 0.5)
       .map((card) => ({ ...card, id: Math.random() }));
     setCards(shuffledCards);
+    setChoiceOne(null);
+    setChoiceOne(null);
 
     setTurns(0);
   };
@@ -31,25 +34,43 @@ function App() {
     choiceOne ? setChoiceTwo(card) : setChoiceOne(card);
 
     // HOLYSHIT! *takes note*
-    if (choiceTwo) {
-      compareChoice();
-      resetTurn();
-    }
-    console.log(choiceOne, "afterand", choiceTwo);
   };
-  console.log(choiceOne, "thirdd", choiceTwo);
+  useEffect(() => {
+    // choiceOne and choiceTwo must have value
+    if (choiceOne && choiceTwo) {
+      // disable only fire when two cards are clicked
+      setDisabled(true);
+      if (choiceOne.src === choiceTwo.src) {
+        setCards((prevCards) => {
+          // use return
+          return prevCards.map((card) => {
+            if (card.src === choiceOne.src) {
+              // card src must match the currrent src
+              return { ...card, matched: true };
+            } else {
+              return card;
+            }
+          });
+        });
 
-  const compareChoice = () => {
-    if (choiceTwo === choiceOne) {
-      console.log("match");
-    } else {
-      console.log("no match");
+        resetTurn();
+      } else {
+        setTimeout(() => {
+          resetTurn();
+        }, 1000);
+      }
     }
-  };
-  const resetTurn = (turns) => {
+  }, [choiceOne, choiceTwo]);
+  console.log(cards);
+  useEffect(() => {
+    shuffleCards();
+  }, []);
+
+  const resetTurn = () => {
     setChoiceOne(null);
     setChoiceTwo(null);
-    setTurns((turns) => turns++);
+    setTurns((prevTurns) => prevTurns + 1);
+    setDisabled(false);
   };
 
   return (
@@ -58,10 +79,16 @@ function App() {
       <button onClick={shuffleCards}>New Game</button>
       <div className="grid-card">
         {cards.map((card) => (
-          <SingleCard key={card.id} card={card} handleChoice={handleChoice} />
+          <SingleCard
+            key={card.id}
+            card={card}
+            handleChoice={handleChoice}
+            flipped={card === choiceOne || card === choiceTwo || card.matched}
+            disabled={disabled}
+          />
         ))}
-        <h2>{turns}</h2>
       </div>
+      <p>{turns}</p>
     </div>
   );
 }
